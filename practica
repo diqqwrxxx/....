@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scorpio</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top-bar">
+    <div class="logo">
+        <img src="logo.png" alt="Scorpio Логотип">
+    </div>
+
+    <div class="catalog-container">
+        <button class="catalog-btn" id="catalog-trigger">
+            <span>▦</span> Всі товари <span id="arrow">▼</span>
+        </button>
+        <div class="dropdown-menu" id="dropdown-menu">
+            <button onclick="filterByCategory('all')">Всі товари</button>
+            <button onclick="filterByCategory('фрукти')">Фрукти</button>
+            <button onclick="filterByCategory('овочі')">Овочі</button>
+            <button onclick="filterByCategory('молочка')">Молочка</button>
+            <button onclick="filterByCategory('м\'ясо')">М'ясо</button>
+            <button onclick="filterByCategory('хліб')">Хліб</button>
+            <button onclick="filterByCategory('напої')">Напої</button>
+            <button onclick="filterByCategory('Алкоголь')">Алкоголь</button>
+            <button onclick="filterByCategory('Комбо')">Комбо</button>
+            <button onclick="filterByCategory('Сир')">Сир</button>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="search" placeholder="Я шукаю..." onkeyup="searchItems()">
+    </div>
+
+    <button id="theme-toggle" class="theme-btn" style="margin-right: 15px;">🌙</button>
+
+    <div class="header-cart" onclick="openCartModal()">
+        🛒 Кошик: <span id="cart-count">0</span>
+    </div>
+</header>
+
+<main>
+    <section id="products" class="grid"></section>
+    <div id="pagination" class="pagination"></div>
+</main>
+
+<div id="cart-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeCartModal()">&times;</span>
+        <h2>🛒 Ваш кошик</h2>
+        
+        <div id="cart-items-list"></div>
+        
+        <div class="cart-total-block">
+            <h3>Разом: <span id="cart-total-price">0</span> ₴</h3>
+            
+            <div class="order-form">
+                <input type="text" id="user-name" placeholder="Твоє ім'я">
+                <input type="text" id="user-phone" placeholder="Номер телефону">
+            </div>
+            
+            <button class="buy-btn-orange" onclick="checkout()">Оформити замовлення</button>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
+
+
+
+
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+}
+
+body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+    background: #f4f7f5; /* Свіжий, злегка зеленкуватий світлий фон */
+    color: #1a241f; /* Глибокий темний колір з зеленим відтінком */
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.top-bar {
+    background: #ffffff; 
+    padding: 15px 5%; 
+    display: flex;
+    align-items: center; 
+    justify-content: space-between;
+    position: sticky; 
+    top: 0; 
+    z-index: 1000;
+    box-shadow: 0 4px 20px rgba(26, 36, 31, 0.04); 
+}
+
+.logo img { 
+    height: 45px; 
+    object-fit: contain;
+}
+
+.catalog-container { position: relative; }
+.catalog-btn {
+    background: #ffffff; 
+    border: 2px solid #10b981; /* Смарагдово-зелений */
+    color: #10b981;
+    padding: 10px 22px; 
+    border-radius: 25px; 
+    font-weight: 600; 
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.catalog-btn:hover {
+    background: #10b981;
+    color: #ffffff;
+}
+
+/* Випадаюче меню каталогу */
+.dropdown-menu {
+    display: none; 
+    position: absolute; 
+    top: 60px; 
+    left: 0;
+    background: #ffffff; 
+    width: 220px; 
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    border-radius: 16px; 
+    padding: 8px; 
+    z-index: 2000; 
+    flex-direction: column;
+    border: 1px solid #e6eee9;
+}
+.dropdown-menu.show { display: flex; }
+.dropdown-menu button {
+    background: none; 
+    border: none; 
+    text-align: left; 
+    padding: 10px 14px;
+    cursor: pointer; 
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: #2d3a34;
+    transition: all 0.2s;
+}
+.dropdown-menu button:hover { 
+    background: #e6f7f0; 
+    color: #10b981; 
+    font-weight: 600;
+}
+
+.search-container { flex: 1; display: flex; justify-content: center; margin: 0 30px; }
+#search {
+    width: 100%; 
+    max-width: 500px; 
+    padding: 12px 24px;
+    border-radius: 25px; 
+    border: 1px solid #ccdcd2; 
+    background: #edf3f0;
+    color: #1a241f;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+}
+#search:focus {
+    background: #ffffff;
+    border-color: #10b981;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+}
+
+.header-cart {
+    background: #e6f7f0; 
+    color: #10b981; 
+    padding: 10px 22px;
+    border-radius: 25px; 
+    border: 2px solid #10b981; 
+    font-weight: bold; 
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.header-cart:hover {
+    background: #10b981;
+    color: #ffffff;
+}
+
+.grid {
+    display: grid; 
+    grid-template-columns: repeat(6, 1fr);
+    gap: 24px; 
+    padding: 40px 5%;
+}
+
+.product-card {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.01);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column; 
+    justify-content: space-between; 
+    height: 100%; 
+    border: 1px solid #e6eee9;
+}
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 25px rgba(26, 36, 31, 0.06);
+}
+
+.product-card h3 {
+    margin: 12px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2d3a34;
+    min-height: 3.6em; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.product-card img {
+    width: 100%;
+    height: 160px;
+    object-fit: contain;
+    margin-bottom: 12px;
+}
+
+.buy-btn-orange {
+    background: #10b981; 
+    color: white; 
+    border: none; 
+    padding: 12px;
+    border-radius: 25px; 
+    width: 100%; 
+    cursor: pointer; 
+    font-weight: bold;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+.buy-btn-orange:hover {
+    background: #059669;
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
+}
+
+.pagination { display: flex; justify-content: center; gap: 12px; padding: 40px 0; }
+.page-btn {
+    width: 42px; 
+    height: 42px; 
+    border: 1px solid #d1ded6; 
+    background: white;
+    border-radius: 50%; 
+    cursor: pointer; 
+    font-weight: bold;
+    color: #495057;
+    transition: all 0.2s;
+}
+.page-btn:hover {
+    border-color: #10b981;
+    color: #10b981;
+}
+.page-btn.active { 
+    background: #10b981; 
+    color: white; 
+    border-color: #10b981; 
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+}
+
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 3000; 
+    left: 0; 
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    background: rgba(18, 28, 23, 0.5); 
+    backdrop-filter: blur(4px);
+    align-items: center; 
+    justify-content: center;
+}
+
+.modal-content {
+    background: #ffffff; 
+    margin: 5% auto; 
+    padding: 30px; 
+    width: 460px; 
+    max-height: 85vh; 
+    border-radius: 24px; 
+    position: relative;
+    display: flex;
+    flex-direction: column; 
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+.close-btn { 
+    position: absolute; 
+    right: 22px; 
+    top: 20px; 
+    font-size: 28px; 
+    cursor: pointer; 
+    color: #94a3b8;
+    transition: color 0.2s;
+    z-index: 10; 
+}
+.close-btn:hover { color: #10b981; }
+
+
+#cart-items-list {
+    flex: 1; 
+    overflow-y: auto; 
+    margin-top: 20px;
+    padding-right: 8px; 
+}
+
+
+#cart-items-list::-webkit-scrollbar { width: 6px; }
+#cart-items-list::-webkit-scrollbar-track { background: transparent; }
+#cart-items-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+/* Блок з інпутами та кнопкою замовлення */
+.cart-total-block {
+    margin-top: auto; 
+    padding-top: 20px;
+    border-top: 1px solid #e6eee9; 
+    background: inherit; 
+}
+
+.cart-total-block h3 {
+    font-size: 1.25rem;
+    margin-bottom: 15px;
+    color: #1a241f;
+}
+
+/* Форма вводу */
+.order-form {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px; 
+}
+
+.order-form input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #ccdcd2; 
+    border-radius: 12px; 
+    background-color: #f4f7f5; 
+    color: #1a241f;
+    font-size: 0.95rem;
+    box-sizing: border-box;
+    transition: all 0.2s;
+}
+.order-form input:focus {
+    border-color: #10b981; 
+    background-color: #ffffff;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+#cart-items-list button {
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+#cart-items-list button:hover { background: #059669; }
+
+.theme-btn {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: 2px solid #10b981; 
+    background: #e6f7f0; 
+    color: #10b981;
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+.theme-btn:hover {
+    transform: scale(1.05);
+}
+
+body.dark-mode {
+    background-color: #090d0b !important; 
+    color: #c2d1c9 !important; 
+}
+
+.dark-mode .top-bar, 
+.dark-mode .product-card, 
+.dark-mode .modal-content, 
+.dark-mode .dropdown-menu {
+    background-color: #111815 !important; 
+    color: #f4f7f5 !important;
+    border: 1px solid #1d2a23 !important; 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark-mode .product-card h3 { color: #ecf3f0 !important; }
+.dark-mode .cart-total-block h3 { color: #ffffff !important; }
+.dark-mode .cart-total-block { border-top-color: #1d2a23 !important; }
+
+.dark-mode #search {
+    background-color: #090d0b !important;
+    color: #ffffff !important;
+    border: 1px solid #1d2a23 !important;
+}
+.dark-mode #search:focus {
+    border-color: #059669 !important;
+    box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.2) !important;
+}
+
+.dark-mode .page-btn {
+    background-color: #111815 !important;
+    color: #7c9386;
+    border-color: #1d2a23 !important;
+}
+.dark-mode .page-btn:hover { color: #10b981; border-color: #10b981; }
+.dark-mode .page-btn.active {
+    background-color: #10b981 !important; 
+    color: white !important;
+    border-color: #10b981 !important;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.4) !important;
+}
+
+.dark-mode .buy-btn-orange {
+    background: linear-gradient(135deg, #10b981, #047857) !important; 
+    border: none !important;
+    box-shadow: 0 4px 14px rgba(4, 120, 87, 0.4) !important;
+}
+.dark-mode .buy-btn-orange:hover {
+    background: linear-gradient(135deg, #059669, #065f46) !important;
+}
+
+.dark-mode #cart-items-list button { background: #10b981 !important; }
+.dark-mode #cart-items-list button:hover { background: #059669 !important; }
+
+.dark-mode .catalog-btn { border-color: #10b981; color: #10b981; background: transparent; }
+.dark-mode .catalog-btn:hover { background: #10b981; color: white; }
+.dark-mode .dropdown-menu button { color: #7c9386; }
+.dark-mode .dropdown-menu button:hover { background: #1d2a23; color: #10b981; }
+
+.dark-mode .header-cart {
+    background: #1d2a23 !important;
+    color: #10b981 !important;
+    border-color: #10b981 !important;
+}
+.dark-mode .header-cart:hover {
+    background: #10b981 !important;
+    color: #ffffff !important;
+}
+
+.dark-mode .theme-btn {
+    background-color: #111815;
+    border-color: #10b981;
+    color: #f1c40f;
+}
+
+.dark-mode .order-form input {
+    background-color: #090d0b !important;
+    color: #ffffff !important;
+    border: 1px solid #1d2a23 !important;
+}
+.dark-mode .order-form input:focus {
+    border-color: #10b981 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+}
+
+
+.toast-container {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.toast {
+    background: #10b981;
+    color: white;
+    padding: 16px 28px;
+    border-radius: 14px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.25);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: slideIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark-mode .toast {
+    background: linear-gradient(135deg, #10b981, #047857);
+    box-shadow: 0 10px 25px rgba(4, 120, 87, 0.3);
+}
+
+@keyframes slideIn {
+    from { transform: translateX(120%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+.logo img { 
+    height: 45px; 
+    width: auto;  
+    object-fit: contain;
+    display: block;
+}
+
+
+
+let products = [
+    { id: 1, name: "Яблука", price: 10, unit: "/100g", img: "https://images.silpo.ua/v2/products/1000x1000/webp/b0a733ef-4856-4f7c-9204-e46e976b1965.png", category: "фрукти" },
+    { id: 2, name: "Банани", price: 11, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/f5214071-6d83-4de8-b655-b977809cf880.png", category: "фрукти" },
+    { id: 3, name: "Молоко", price: 67, img: "https://images.silpo.ua/v2/products/1000x1000/webp/391ee6f5-3f19-46b1-be47-8883f6a367b9.png", category: "молочка" },
+    { id: 4, name: "Хліб", price: 18, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/d59d5671-27b0-4712-8b57-933e19b0c2e8.png", category: "хліб" },
+    { id: 5, name: "Курка", price: 135, unit: "/кг", img: "https://images.silpo.ua/v2/products/1000x1000/webp/365edb56-4abd-499d-871a-ab81a2bb2188.png", category: "м'ясо" },
+    { id: 6, name: "Сир", price: 185, img: "https://images.silpo.ua/v2/products/1000x1000/webp/e4e4f5fa-cafa-48bd-b19c-a00f5e38cf25.png", category: "Сир" },
+    { id: 7, name: "Помідори", price: 25, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/6e0a5efa-c8ed-4a07-b49c-265444fa3b19.png", category: "овочі" },
+    { id: 8, name: "Огірки", price: 23, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/4e8b47fc-6740-4e7d-80bd-13d7e0f6ddd1.png", category: "овочі" },
+    { id: 9, name: "Яйця", price: 55, img: "https://images.silpo.ua/v2/products/1000x1000/webp/00732be9-1781-4202-9646-3441b4cea82b.png", category: "молочка" },
+    { id: 10, name: "Картопля", price: 6, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/4b068eff-be69-48b6-bba1-ba4860e3b727.png", category: "овочі" },
+    { id: 11, name: "Апельсини", price: 13, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/7774efde-6f1a-4ea6-821f-1ecb3b4d34fb.png", category: "фрукти" },
+    { id: 12, name: "Груші", price: 14, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/6528553e-9744-4f40-a1f3-97c3c271e1fa.png", category: "фрукти" },
+    { id: 13, name: "Кефір", price: 60, img: "https://images.silpo.ua/v2/products/1000x1000/webp/dfc0daf3-5c4e-45ab-b94c-92555789e21f.png", category: "молочка" },
+    { id: 14, name: "Йогурт", price: 80, img: "https://images.silpo.ua/v2/products/1000x1000/webp/fb07e5f1-08e9-4fa0-926b-00597b6cb241.png", category: "молочка" },
+    { id: 15, name: "Свинина", price: 210, unit: "/кг", img: "https://images.silpo.ua/v2/products/1000x1000/webp/58465a4a-37f5-4d25-b3ac-84df3c00da4c.png", category: "м'ясо" },
+    { id: 16, name: "Ковбаса", price: 145, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/79ff954c-daa6-49a8-be9c-ab0c0b3b9117.png", category: "м'ясо" },
+    { id: 17, name: "Морква", price: 5, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/4104a6f7-ff0a-4e0e-895c-f8b25b7319cc.png", category: "овочі" },
+    { id: 18, name: "Цибуля", price: 4, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/42108358-3ebb-4310-b4f2-b74adc049a03.png", category: "овочі" },
+    { id: 19, name: "Буряк", price: 5, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/d81ce804-a2ad-448d-9c22-6b46279d8fda.png", category: "овочі" },
+    { id: 20, name: "Батон", price: 50, img: "https://images.silpo.ua/v2/products/1000x1000/webp/aedda165-9048-4d65-be85-1406f91ebf14.png", category: "хліб" },
+    { id: 21, name: "Вода", price: 28, img: "https://images.silpo.ua/v2/products/1000x1000/webp/1489abe2-c343-4079-a75e-fe7dd0f7e39c.png", category: "напої" },
+    { id: 22, name: "Сік", price: 153, img: "https://images.silpo.ua/v2/products/1000x1000/webp/e2b9cd93-0108-4132-9f13-2d0cce1e97d8.png", category: "напої" },
+    { id: 23, name: "Енергетик Monster Energy", price: 80, img: "https://images.silpo.ua/v2/products/1000x1000/webp/061b12cf-2625-4bc9-b46f-0576c3f2397a.png", category: "напої" },
+    { id: 24, name: "Перець червоний", price: 25, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/dd451510-588d-4bf1-afa7-c9b5b2eeeb4b.png", category: "овочі" },
+    { id: 25, name: "Свинячий ошийок", price: 26, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/f6fad2ad-1739-4af2-bad1-b23fff14fa86.png", category: "м'ясо" },
+    { id: 26, name: "Coca-Cola", price: 25, img: "https://images.silpo.ua/v2/products/1000x1000/webp/392487e2-02fe-4d14-bbe6-2b959c0550e2.png", category: "напої" },
+    { id: 27, name: "Coca-Cola Zero", price: 28, img: "https://images.silpo.ua/v2/products/1000x1000/webp/c1662c9b-725c-46da-901b-4f04a2057d8a.png", category: "напої" },
+    { id: 28, name: "Coca-Cola 1.5л", price: 59, img: "https://images.silpo.ua/v2/products/1000x1000/webp/ed23e8bd-cff6-496f-9d83-c91d6644481e.png", category: "напої" },
+    { id: 29, name: "Coca-Cola Zero 1.5л", price: 59, img: "https://images.silpo.ua/v2/products/1000x1000/webp/b8af6b4d-d10e-46af-9388-70cd7ec147c1.png", category: "напої" },
+    { id: 30, name: "Куряча гомілка", price: 10, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/b85c9f55-7ba0-42b4-9b9c-09e0b701c73f.png", category: "м'ясо" },
+    { id: 31, name: "Індичий гуляш", price: 27, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/a3bbc799-c880-499c-a18c-20d34b1e587b.jpg", category: "м'ясо" },
+    { id: 32, name: " Енергетик Monster Energy Mocha", price: 180, img: "https://images.silpo.ua/v2/products/1000x1000/webp/a66c03f4-393f-4eb3-a190-9d586506342a.png", category: "напої" },
+    { id: 33, name: "Енергетик Monster Energy Bad Apple", price: 80, img: "https://images.silpo.ua/v2/products/1000x1000/webp/a5bd062f-9944-43e5-aa7b-663525e4f203.png", category: "напої" },
+    { id: 34, name: " Енергетик Monster Energy Juice Viking Berry ", price: 300, img: "https://images.silpo.ua/v2/products/1000x1000/webp/3c75f41a-8efd-4cb3-ba44-82f8003a9348.png", category: "напої" },
+    { id: 35, name: "Енергетик Monster Gold", price: 80, img: "https://images.silpo.ua/v2/products/1000x1000/webp/42818a31-900f-4d5c-b15d-fe794b9e6317.png", category: "напої" },
+    { id: 36, name: "Енергетик Monster Energy Ripper", price: 60, img: "https://images.silpo.ua/v2/products/1000x1000/webp/deee4211-af36-4187-ad57-b47548f0c38f.png", category: "напої" },
+    { id: 37, name: "Енергетик Monster Energy Nitro", price: 75, img: "https://images.silpo.ua/v2/products/1000x1000/webp/7fc50169-bea9-4f30-9993-8ed9daefde7e.png", category: "напої" },
+    { id: 38, name: "Енергетик Monster Energy Rio Punch ", price: 70, img: "https://images.silpo.ua/v2/products/1000x1000/webp/e6db4206-8d1e-4bd9-8749-08efad1272d6.png", category: "напої" },
+    { id: 39, name: "Енергетик Monster Energy Ultra ", price: 79, img: "https://images.silpo.ua/v2/products/1000x1000/webp/70fd2e6e-60c2-43ad-8d98-9dbe3cf3b3c9.png", category: "напої" },
+    { id: 40, name: "Енергетик Monster UltraFiesta", price: 80, img: "https://images.silpo.ua/v2/products/1000x1000/webp/69ff7041-b8c4-4c86-96eb-952e810e2e47.png", category: "напої" },
+    { id: 41, name: " Енергетик Monster Energy Monarch", price: 75, img: "https://images.silpo.ua/v2/products/1000x1000/webp/2753d8af-051d-4476-95ba-b511c9e9c177.png", category: "напої" },
+    { id: 42, name: "Енергетик Monster Energy Nitro Cosm Peach", price: 99, img: "https://images.silpo.ua/v2/products/1000x1000/webp/35cc1427-434a-4a88-9355-09be5fc103d7.png", category: "напої" },
+    { id: 43, name: "Сендвіч Цезар з куркою", price: 110, img: "https://images.silpo.ua/v2/products/1000x1000/webp/95249b54-b6f4-4e28-9340-49aceb5a2896.png", category: "хліб" },
+    { id: 44, name: "Хліб Boulangerie «Фітнес»", price: 35, img: "https://images.silpo.ua/v2/products/1000x1000/webp/cb46c85f-a2bd-426f-9adb-4112def3b039.png", category: "хліб" },
+    { id: 45, name: "Слойка Boulangerie з капустою та грибами", price: 30, img: "https://images.silpo.ua/v2/products/1000x1000/webp/d52a5f88-a7cd-4629-b7f1-0049a65cc5e1.png", category: "хліб" },
+    { id: 46, name: "Роліні з тіста Філо з м'ясом", price: 32, img: "https://images.silpo.ua/v2/products/1000x1000/webp/de6c24bc-477b-4f75-a268-436724df309d.png", category: "хліб" },
+    { id: 47, name: "Роліні з тіста Філо зі шпинатом та сиром", price: 33, img: "https://images.silpo.ua/v2/products/1000x1000/webp/5c929477-b122-4eaa-8d5a-4eb0760c5659.png", category: "хліб" },
+    { id: 48, name: "Pepsi зі смаком вишні", price: 55, img: "https://images.silpo.ua/v2/products/1000x1000/webp/4a16eb12-923f-4650-b70e-45cf776ab994.png", category: "напої" },
+    { id: 49, name: "Чотири сири + Coca-Cola Zero 750", price: 239, img: "https://images.silpo.ua/v2/products/1000x1000/webp/392aa76e-f215-4711-b516-7128e5564ceb.png", category: "Комбо" },
+    { id: 50, name: "«Чізбургер курячий та Pepsi Black»", price: 145, img: "https://images.silpo.ua/v2/products/1000x1000/webp/26d379a7-2003-455e-b517-b625c8e06052.png", category: "Комбо" },
+    { id: 51, name: "Американа + Coca-Cola Zero 750 ", price: 145, img: "https://images.silpo.ua/v2/products/1000x1000/webp/b1afc7bd-f224-494a-9d05-0b3a34cd3c3b.png", category: "Комбо" },
+    { id: 52, name: "Hell Black Cherry ", price: 49, img: "https://images.silpo.ua/v2/products/1000x1000/webp/5048e901-52ab-43cb-9ca1-f3949a6d274c.png", category: "напої" },
+    { id: 53, name: "Філадельфія з лососем + Coca-Cola Zero 500", price: 320, img: "https://images.silpo.ua/v2/products/1000x1000/webp/cf714227-a143-4d74-898c-eca9f90e5057.png", category: "Комбо" },
+    { id: 54, name: "Сік «Наш Сік» яблучний ", price: 47, img: "https://images.silpo.ua/v2/products/1000x1000/webp/acfbf39e-2407-430e-8bef-df2a2087ca41.png", category: "напої" },
+    { id: 55, name: "Енергетик Red Bull", price: 85, img: "https://images.silpo.ua/v2/products/1000x1000/webp/569af27d-f88b-4f6c-8dcf-2fd3c223e829.png", category: "напої" },
+    { id: 56, name: "Енергетик Hell Goji berry", price: 50, img: "https://images.silpo.ua/v2/products/1000x1000/webp/87d75f57-8c94-494e-844c-02ca102d0128.png", category: "напої" },
+    { id: 57, name: " Lime Cola", price: 420, img: "https://images.silpo.ua/v2/products/1000x1000/webp/7e79c0f5-ed21-45fc-8caa-7c4f3b3e500c.png", category: "напої" },
+    { id: 58, name: "Нектар Cappy із банана", price: 100, img: "https://images.silpo.ua/v2/products/1000x1000/webp/51e88581-ba1a-4f6e-9615-e59670ad1842.png", category: "напої" },
+    { id: 59, name: "Енергетик Burn Apple Kiwi", price: 61, img: "https://images.silpo.ua/v2/products/1000x1000/webp/7348a098-ffe6-45a4-9f4a-97ddf73eb581.png", category: "напої" },
+    { id: 60, name: "Сік Cappy яблучний", price: 100, img: "https://images.silpo.ua/v2/products/100₀x₁₀₀₀/webp/a8e4a311-b34e-44f1-9f9₀-e7₁₉ed8fcb2e.png", category: "напої" },
+    { id: 61, name: "«Чотири м’яса та Pepsi Black»", price: 250, img: "https://images.silpo.ua/v2/products/1000x1000/webp/5c593003-24eb-4d0e-b456-f250b882f365.png", category: "Комбо" },
+    { id: 62, name: "ЕнергетикBurn Original", price: 60, img: "https://images.silpo.ua/v2/products/1000x1000/webp/7ceb1a36-1a9d-4e05-b325-c90223044bcb.png", category: "напої" },
+    { id: 63, name: "Вино Callejo Parajes de Callejo Ribera del Duero", price: 1300, img: "https://images.silpo.ua/v2/products/1000x1000/webp/a9c6f5db-d58b-43ba-b489-dedd7ea52d2b.png", category: "Алкоголь" },
+    { id: 64, name: "Вино Casa Rojo Tempranilio Clon 98 Ribera Del Duero", price: 1300, img: "https://images.silpo.ua/v2/products/1000x1000/webp/3750a438-316d-43bc-8b9b-8d8a4ccd1a24.png", category: "Алкоголь" },
+    { id: 65, name: "Вино Chateau Carbonnieux 2018 біле", price: 3600, img: "https://images.silpo.ua/v2/products/1000x1000/webp/e7cb4baa-3fdf-47d8-8437-338d4d89512a.png", category: "Алкоголь" },
+    { id: 66, name: "Вино Chateau Cheval Blanc Saint-Emilion Grand Cru Classe 2018 червоне", price: 48000, img: "https://images.silpo.ua/v2/products/1000x1000/webp/a882275f-2ad3-49a8-b569-3f189f208d58.png", category: "Алкоголь" },
+    { id: 67, name: "Вино Castelforte Pinot Grigio delle Venezie IGT", price: 2800, img: "https://images.silpo.ua/v2/products/1000x1000/webp/a6f3aac7-4aaf-4012-8c51-810fa7d17e9b.png", category: "Алкоголь" },
+    { id: 68, name: "Вино Aguaribay Malbec", price: 180, img: "https://images.silpo.ua/v2/products/1000x1000/webp/a42a5e30-1dbf-4e18-81bc-cf2b0b34cd13.png", category: "Алкоголь" },
+    { id: 69, name: "Вино Cabriz Rose", price: 380, img: "https://images.silpo.ua/v2/products/1000x1000/webp/56ff8dc9-753f-411c-bc38-131e44251567.png", category: "Алкоголь" },
+    { id: 70, name: "Вино Blossom Hill Chardonnay", price: 299, img: "https://images.silpo.ua/v2/products/1000x1000/webp/d13644af-2ab3-400a-8cb3-986da1498d17.png", category: "Алкоголь" },
+    { id: 71, name: "Пиво Kronenbourg Blanc світле нефільтроване", price: 170, img: "https://images.silpo.ua/v2/products/1000x1000/webp/19234576-dcfc-4ee8-8e0b-a74f0dffcbc1.png", category: "Алкоголь" },
+    { id: 72, name: "Пиво Carlsberg світле", price: 200, img: "https://images.silpo.ua/v2/products/1000x1000/webp/2f1b686a-5a23-4fbe-bc80-6bde43c34254.png", category: "Алкоголь" },
+    { id: 73, name: "Пиво Corona Extra світле", price: 120, img: "https://images.silpo.ua/v2/products/1000x1000/webp/6c7cf752-b530-4574-9a40-1fb419cc2715.png", category: "Алкоголь" },
+    { id: 74, name: "Пиво Lowenbrau Original світле", price: 124, img: "https://images.silpo.ua/v2/products/1000x1000/webp/3081fc03-8d38-40c5-8be9-4f9d3323ee53.png", category: "Алкоголь" },
+    { id: 75, name: "Пиво Seth&Riley's Garage Lemon світле", price: 79, img: "https://images.silpo.ua/v2/products/1000x1000/webp/5aceec76-329c-4dcc-826e-815b3868b24b.png", category: "Алкоголь" },
+    { id: 76, name: "Пиво Heineken світле", price: 70, img: "https://images.silpo.ua/v2/products/1000x1000/webp/f990ba21-ab33-45f1-92ab-cb42e5c27e3c.png", category: "Алкоголь" },
+    { id: 77, name: "Пиво Kronenbourg Blanc", price: 59, img: "https://images.silpo.ua/v2/products/1000x1000/webp/b5192e45-a728-43bd-a009-38e4a9696301.png", category: "Алкоголь" },
+    { id: 78, name: "Пиво Львівське 1715 світле", price: 82, img: "https://images.silpo.ua/v2/products/1000x1000/webp/5f8a471b-5999-4c12-b61f-f03d48373530.png", category: "Алкоголь" },
+    { id: 79, name: "Hike Blanche світле", price: 30, img: "https://images.silpo.ua/v2/products/1000x1000/webp/3bd4e14b-4bde-476a-bd2a-d5b21c0a718b.png", category: "Алкоголь" },
+    { id: 80, name: "Молоко згущене «Первомайський МКК»", price: 50, img: "https://images.silpo.ua/v2/products/1000x1000/webp/39d3ff82-f883-4f99-82ed-c9ff05bdf141.png", category: "молочка" },
+    { id: 81, name: "Vega Milk рисово-кокосовий ультрапастеризований 1,5%", price: 95, img: "https://images.silpo.ua/v2/products/1000x1000/webp/7ee83de0-a8e2-4c7e-a2a3-6cfe0fd47319.png", category: "молочка" },
+    { id: 82, name: "«Карбонара»", price: 54, img: "https://images.silpo.ua/v2/products/1000x1000/webp/fd500c6d-fc67-441e-8400-3de4624c8668.png", category: "Комбо" },
+    { id: 83, name: "Барбекю + Coca-Cola Zero 750", price: 210, img: "https://images.silpo.ua/v2/products/1000x1000/webp/fa69922b-4157-4245-9703-998da8c3898a.png", category: "Комбо" },
+    { id: 84, name: "Гамбургер + Coca-Cola Original 500", price: 148, img: "https://images.silpo.ua/v2/products/1000x1000/webp/b1925b38-80a7-4eb3-9fac-d1512dded1a4.png", category: "Комбо" },
+    { id: 85, name: "Рол з лососем та вугром + Coca-Cola Original 500", price: 390, img: "https://images.silpo.ua/v2/products/1000x1000/webp/211c9faa-0f40-4152-a0f0-0d3179f263e8.png", category: "Комбо" },
+    { id: 86, name: "«Чізбургер курячий та Pepsi Black»", price: 145, img: "https://images.silpo.ua/v2/products/1000x1000/webp/26d379a7-2003-455e-b517-b625c8e06052.png", category: "Комбо" },
+    { id: 87, name: "Комо InSalata м'який 50%", price: 62, img: "https://images.silpo.ua/v2/products/1000x1000/webp/2cafdbf6-5385-44f4-8832-1844a46204e9.png", category: "Сир" },
+    { id: 88, name: "Mlekovita «Гауда» безлактозний 45% з коров'ячого молока", price: 110, img: "https://images.silpo.ua/v2/products/1000x1000/webp/bb405e57-ee2a-4dd6-86d5-0c7c0673d77c.png", category: "Сир" },
+    { id: 89, name: "«Монашинські сири»", price: 55, img: "https://images.silpo.ua/v2/products/1000x1000/webp/4c69ac34-3329-4c4c-ba59-68c2118e1eaf.png", category: "Сир" },
+    { id: 90, name: "Крафтяр Сулугуні плетінка копчений", price: 50, img: "https://images.silpo.ua/v2/products/1000x1000/webp/0162f1e7-9b78-4b2f-b574-6e78180c27b4.png", category: "Сир" },
+    { id: 91, name: "Тофу «Агропрод» з прованськими травами, соєвий продукт", price: 25,unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/bef77ff1-e73d-4541-adfe-14c8dfccbbf6.png", category: "Сир" },
+    { id: 92, name: "Сир Ферма Сулугуні чеддеризований 45%", price: 55, img: "https://images.silpo.ua/v2/products/1000x1000/webp/e74976f0-d209-4c06-8315-2cef781ceb0a.png", category: "Сир" },
+    { id: 93, name: "Горілка Absolut 40%", price: 399, img: "https://images.silpo.ua/v2/products/1000x1000/webp/8749a70b-ec11-411e-b6d1-47860f2c2a2e.png", category: "Алкоголь" },
+    { id: 94, name: "Ананас преміум", price: 260, img: "https://images.silpo.ua/v2/products/1000x1000/webp/72a7c508-d4e2-4ce6-8dcf-930953f94b85.png", category: "фрукти" },
+    { id: 95, name: "Ківі Голд", price: 30, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/bfe50a1a-9b56-4924-b3a3-74ad10cc0d2f.png", category: "фрукти" },
+    { id: 96, name: "Гранат", price: 28, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/8d21e389-2ba2-43d8-9cd7-e3ebf86a7f0d.png", category: "фрукти" },
+    { id: 97, name: "Кокос свіжий", price: 200 , img: "https://images.silpo.ua/v2/products/1000x1000/webp/f590ef1d-c6a3-4c49-98c0-c2d8eb0b2010.png", category: "фрукти" },
+    { id: 98, name: "Полуниця", price: 32,unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/2ec02e2d-39ae-47b5-930b-a29cc8e93e6a.png", category: "фрукти" },
+    { id: 99, name: "Лохина", price: 316, img: "https://images.silpo.ua/v2/products/1000x1000/webp/271de171-7a75-4a53-baf9-a389aac08271.png", category: "фрукти" },
+    { id: 100, name: "Малина", price: 579 , img: "https://images.silpo.ua/v2/products/1000x1000/webp/0e4227e1-9546-4684-afb7-156628e3c009.png", category: "фрукти" },
+    { id: 101, name: "Манго", price: 55 , img: "https://images.silpo.ua/v2/products/1000x1000/webp/3ddc2eb0-5a0e-4e31-93a5-3ffb8baac355.png", category: "фрукти" },
+    { id: 102, name: "Редиска ", price: 99 , img: "https://images.silpo.ua/v2/products/1000x1000/webp/695d7912-c7a0-4cc8-8be5-b3fd4fd70d34.png", category: "овочі" },
+    { id: 103, name: "Капуста цвітна", price: 16,unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/b90c401e-360e-41d9-b623-c6e47df4b29b.png", category: "овочі" },
+    { id: 104, name: "Капуста пекінська", price: 4,unit: "/100г" , img: "https://images.silpo.ua/v2/products/1000x1000/webp/3137dc44-61e2-4b2a-b6ae-3a5ea510c810.png", category: "овочі" },
+    { id: 105, name: "Перець  чілі червоний", price: 61, img: "https://images.silpo.ua/v2/products/1000x1000/webp/d339ab4a-0dcc-43c2-8bdf-98cc33b127b6.png", category: "овочі" },
+    { id: 106, name: "Спаржа зелена", price: 139, img: "https://images.silpo.ua/v2/products/1000x1000/webp/c298005b-705a-479c-a148-5d7c58dabef4.png", category: "овочі" },
+    { id: 107, name: "Сметана «Ферма» 15%", price: 45, img: "https://images.silpo.ua/v2/products/1000x1000/webp/7719c64c-bc59-427e-9a2b-52d9e6906b9e.png", category: "молочка" },
+    { id: 108, name: "Сметана «Селянська» 15%", price: 57, img: "https://images.silpo.ua/v2/products/1000x1000/webp/e504020a-feda-4101-b96a-a84fff55cede.png", category: "молочка" },
+    { id: 109, name: "Вершки «Ферма» ультрапастеризовані відбірні 20%", price: 100, img: "https://images.silpo.ua/v2/products/1000x1000/webp/764a1dc1-1544-49da-86dd-6feb8248ae5d.png", category: "молочка" },
+    { id: 110, name: "Вершки Яготинські 15% ", price: 42, img: "https://images.silpo.ua/v2/products/1000x1000/webp/b2bfbcde-fc4e-409e-b0a4-1b60b807ef73.png", category: "молочка" },
+    { id: 111, name: "Масло солодковершкове «Ферма» екстра 82,5%", price: 128, img: "https://images.silpo.ua/v2/products/1000x1000/webp/59bef843-1592-4edd-8540-80c306cbdc68.png", category: "молочка" },
+    { id: 112, name: "Масло топлене Лавка традицій Чистий Смак Гхі", price: 180, img: "https://images.silpo.ua/v2/products/1000x1000/webp/d994b40e-4f4b-4efa-901a-ae3b8d247b78.png", category: "молочка" },
+    { id: 113, name: "Масло солодковершкове «Яготинське» «Селянське» 73%", price: 129, img: "https://images.silpo.ua/v2/products/1000x1000/webp/e8be97f0-5098-4c01-af60-e8c09c567194.png", category: "молочка" },
+    { id: 114, name: "Йогурт Ферма Персик натуральний 1,5%", price: 65, img: "https://images.silpo.ua/v2/products/1000x1000/webp/f9b3e6b2-b6ff-4719-9a3d-7881dbbb395a.png", category: "молочка" },
+    { id: 115, name: "Стейк «Портерхаус»", price: 120, unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/318e70ad-e507-402f-ad75-ef5c82e664d9.png", category: "м'ясо" },
+    { id: 116, name: "Теляча лопатка", price: 38,unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/5f7e7792-3711-45aa-b2cd-1d7c624b3539.png", category: "м'ясо" },
+    { id: 117, name: "Свиняче сало «Генеральське»", price: 70,unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/2cfc0613-a41f-4bf9-be4f-72157f9d42ae.png", category: "м'ясо" },
+    { id: 118, name: "Свиняча лопатка", price: 25,unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/dd068511-f03c-433f-bedb-5bbdfa600dbf.png", category: "м'ясо" },
+    { id: 119, name: "Свинячий стейк ошийок фермерський,", price: 34,unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/8adba788-748f-47e8-b9a5-f3a53f856623.png", category: "м'ясо" },
+    { id: 120, name: "Фарш свинячий", price: 17 , unit: "/100г",img: "https://images.silpo.ua/v2/products/1000x1000/webp/f5c1223e-1687-48cb-90b3-084b29ad7f0a.png", category: "м'ясо" },
+    { id: 121, name: "Хліб «Крафтяр» «Скандинавський»", price: 10,unit: "/100г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/978736ed-92b5-416c-9ca3-e57aba28af18.png", category: "хліб" },
+    { id: 122, name: "Хліб «Литовський»", price: 40,unit: "/340г", img: "https://images.silpo.ua/v2/products/1000x1000/webp/b6bb09f9-c5ac-4590-b313-453640aae0eb.png", category: "хліб" },
+    { id: 123, name: "Хліб «Кулиничі» «Домашній»", price: 33, img: "https://images.silpo.ua/v2/products/1000x1000/webp/9e33b5cb-a38e-4335-b5bb-3a5e209f99b1.png", category: "хліб" },
+    { id: 124, name: "Хліб Boulangerie ", price: 30, img: "https://images.silpo.ua/v2/products/1000x1000/webp/1ee153b9-639b-458c-892d-e0a8dc9c01a7.png", category: "хліб" },
+    { id: 125, name: "Хліб «Київхліб»", price: 35, img: "https://images.silpo.ua/v2/products/1000x1000/webp/9eea2ca4-077a-4471-9ca2-a439b7f4ac3a.png", category: "хліб" },
+    { id: 126, name: "Хліб Кулиничі Бородинський", price: 38, img: "https://images.silpo.ua/v2/products/1000x1000/webp/0497558e-1c20-47e0-adae-db35d63f3717.png", category: "хліб" },
+    { id: 127, name: "Крем-сир Philadelphia Оригінальний 61%", price: 130, img: "https://images.silpo.ua/v2/products/1000x1000/webp/8063dab6-3453-4732-97d7-72e6b6da660b.png", category: "Сир" },
+    { id: 128, name: "Крем-сир Premialle з травами 55%", price: 85, img: "https://images.silpo.ua/v2/products/1000x1000/webp/79cf5046-c1c5-4241-bffc-742729071b01.png", category: "Сир" },
+    { id: 129, name: "Сир Paturages Comtois «Камамбер» 45% з коров'ячого молока", price: 149, img: "https://images.silpo.ua/v2/products/1000x1000/webp/fcf7efb9-a785-48f3-ad35-a94eca7ec78d.png", category: "Сир" },
+    { id: 130, name: "Сир «Брі Діжон»", price: 55, img: "https://images.silpo.ua/v2/products/1000x1000/webp/584985a9-5966-482d-96be-48eef648079b.png", category: "Сир" },
+    { id: 131, name: "Сир «Блю Д'Овернь» Laqueuille 52%", price: 80, img: "https://images.silpo.ua/v2/products/1000x1000/webp/0c6f20cb-f92f-475e-ba96-e13cc4cbad60.png", category: "Сир" },
+    { id: 132, name: "«Дабл чізбургер та Pepsi»", price: 195, img: "https://images.silpo.ua/v2/products/1000x1000/webp/50bef4b5-40dc-4458-b782-bea7d8e51b63.png", category: "Комбо" },
+    { id: 133, name: "Дабл чізбургер + Coca-Cola Original", price: 180, img: "https://images.silpo.ua/v2/products/1000x1000/webp/f67c9bdb-7d77-429e-922e-4cdc3f8f2115.png", category: "Комбо" },
+
+];
+
+let cart = [];
+let currentPage = 1;
+const itemsPerPage = 30;
+let filteredProducts = [...products];
+
+window.onload = () => {
+    shuffle(products);               
+    filteredProducts = [...products]; 
+    displayProducts();               
+    initTheme();                     
+    updateCartCount();               
+};
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+function displayProducts() {
+    const container = document.getElementById("products");
+    if (!container) return;
+    container.innerHTML = "";
+
+    const maxPages = Math.ceil(filteredProducts.length / itemsPerPage) || 1;
+    if (currentPage > maxPages) currentPage = 1;
+
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    const itemsToShow = filteredProducts.slice(start, end);
+
+    if (itemsToShow.length === 0) {
+        container.innerHTML = "<div style='grid-column: 1/-1; text-align: center; padding: 50px;'><h2>Товарів не знайдено</h2></div>";
+    } else {
+        itemsToShow.forEach(product => {
+            const card = document.createElement("div");
+            card.className = "product-card";
+            
+            const unitText = product.unit ? `<span style="font-size: 0.9rem; color: #666; font-weight: normal;"> ${product.unit}</span>` : "";
+
+            card.innerHTML = `
+                <img src="${product.img}" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
+                <h3>${product.name}</h3>
+                <p class="price">${product.price} ₴${unitText}</p>
+                <button class="buy-btn-orange" onclick="addToCart(${product.id}); event.stopPropagation();">В кошик</button>
+            `;
+            container.appendChild(card);
+        });
+    }
+    renderPagination();
+}
+
+function renderPagination() {
+    const container = document.getElementById("pagination");
+    if (!container) return;
+    container.innerHTML = "";
+    
+    const pageCount = Math.ceil(filteredProducts.length / itemsPerPage);
+    if (pageCount <= 1) return;
+
+    for (let i = 1; i <= pageCount; i++) {
+        const btn = document.createElement("button");
+        btn.innerText = i;
+        btn.className = i === currentPage ? "page-btn active" : "page-btn";
+        btn.onclick = () => { 
+            currentPage = i; 
+            displayProducts(); 
+            window.scrollTo({top: 0, behavior: 'smooth'}); 
+        };
+        container.appendChild(btn);
+    }
+}
+
+function filterByCategory(cat) {
+    filteredProducts = (cat === 'all') ? [...products] : products.filter(p => p.category === cat);
+    currentPage = 1;
+    displayProducts();
+}
+
+function searchItems() {
+    const val = document.getElementById("search").value.toLowerCase().trim();
+    
+    filteredProducts = products.filter(p => {
+        const productName = p.name.toLowerCase();
+        return productName.startsWith(val); // Магія перевірки першої літери
+    });
+    
+    currentPage = 1;
+    displayProducts();
+}
+
+function addToCart(id) {
+    const product = products.find(p => p.id === id);
+    const existing = cart.find(item => item.id === id);
+    if (existing) {
+        existing.qty++;
+    } else {
+        cart.push({ ...product, qty: 1 });
+    }
+    updateCartCount();
+    showToast(`Додано в кошик: ${product.name}`);
+}
+
+function updateCartCount() {
+    const countElement = document.getElementById("cart-count");
+    if (countElement) {
+        countElement.innerText = cart.reduce((sum, i) => sum + i.qty, 0);
+    }
+}
+
+function changeQty(id, delta) {
+    const item = cart.find(p => p.id === id);
+    if (item) {
+        item.qty += delta;
+        if (item.qty <= 0) {
+            removeFromCart(id);
+        } else {
+            updateCartCount();
+            openCartModal(); 
+        }
+    }
+}
+
+function removeFromCart(id) {
+    const item = cart.find(p => p.id === id);
+    cart = cart.filter(item => item.id !== id);
+    updateCartCount();
+    openCartModal(); 
+    if (item) showToast(`Видалено: ${item.name}`);
+}
+
+function openCartModal() {
+    const list = document.getElementById("cart-items-list");
+    if (!list) return;
+    
+    list.innerHTML = cart.length ? "" : "<p style='text-align:center; padding:20px;'>Кошик порожній</p>";
+    let total = 0;
+
+    cart.forEach(item => {
+        total += item.price * item.qty;
+        list.innerHTML += `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; border-bottom:1px solid #334155; gap: 10px;">
+            <div style="flex: 1;">
+                <div style="font-weight:bold;">${item.name}</div>
+                <div style="font-size:0.9rem; color:#888;">${item.price} ₴</div>
+            </div>
+            
+            <div style="display:flex; align-items:center; gap:10px;">
+                <button onclick="changeQty(${item.id}, -1)" style="width:25px; cursor:pointer;">-</button>
+                <span style="min-width:20px; text-align:center;">${item.qty}</span>
+                <button onclick="changeQty(${item.id}, 1)" style="width:25px; cursor:pointer;">+</button>
+            </div>
+
+            <div style="font-weight:bold; min-width:60px; text-align:right;">${item.price * item.qty} ₴</div>
+            
+            <button onclick="removeFromCart(${item.id})" style="background:none; border:none; color:#ff4d4d; cursor:pointer; font-size:1.2rem; padding:0 5px;">✕</button>
+        </div>`;
+    });
+
+    document.getElementById("cart-total-price").innerText = total;
+    document.getElementById("cart-modal").style.display = "block";
+}
+
+function closeCartModal() { 
+    document.getElementById("cart-modal").style.display = "none"; 
+}
+
+function clearCart() {
+    cart = [];
+    updateCartCount();
+    closeCartModal();
+    showToast("Кошик очищено");
+}
+
+function initTheme() {
+    const themeBtn = document.getElementById('theme-toggle');
+    if (!themeBtn) return;
+
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+        themeBtn.innerText = '☀️';
+    }
+
+    themeBtn.onclick = () => {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        themeBtn.innerText = isDark ? '☀️' : '🌙';
+    };
+}
+
+const catalogTrigger = document.getElementById('catalog-trigger');
+if (catalogTrigger) {
+    catalogTrigger.onclick = (e) => {
+        e.stopPropagation();
+        document.getElementById('dropdown-menu').classList.toggle('show');
+    };
+}
+
+window.onclick = () => {
+    const menu = document.getElementById('dropdown-menu');
+    if (menu) menu.classList.remove('show');
+};
+
+let orderCount = 1; 
+
+function checkout() {
+    if (cart.length === 0) {
+        showToast("❌ Кошик порожній!");
+        return;
+    }
+
+    const userName = document.getElementById("user-name") ? document.getElementById("user-name").value.trim() : "";
+    const userPhone = document.getElementById("user-phone") ? document.getElementById("user-phone").value.trim() : "";
+
+    if (!userName || !userPhone) {
+        showToast("⚠️ Заповни ім'я та телефон!");
+        return;
+    }
+
+    const TELEGRAM_TOKEN = '8873179905:AAFXrwvLbjoCMDHS7zxKit-JYfWjbL3fmso';
+    const CHAT_ID = '1654834532';
+    
+    let message = `📦 *Замовлення №${orderCount}*\n`;
+    message += `👤 *Клієнт:* ${userName}\n`;
+    message += `📞 *Телефон:* ${userPhone}\n\n`;
+    message += `🛒 *Товари:*\n`;
+    
+    let totalSum = 0;
+    cart.forEach((item, index) => {
+        const itemTotal = item.price * item.qty;
+        totalSum += itemTotal;
+        message += `${index + 1}. *${item.name}* — ${item.qty} шт. (${itemTotal} ₴)\n`;
+    });
+    
+    message += `\n💰 *Загальна сума:* ${totalSum} ₴`;
+
+    const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
+
+    fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            chat_id: CHAT_ID,
+            text: message,
+            parse_mode: "Markdown" 
+        })
+    })
+    .then(response => {
+        if (response.ok) {
+            showToast(`✅ Дякуємо, ${userName}! Замовлення №${orderCount} оформлено.`);
+            
+            if (document.getElementById("user-name")) document.getElementById("user-name").value = "";
+            if (document.getElementById("user-phone")) document.getElementById("user-phone").value = "";
+            
+            cart = []; 
+            updateCartCount(); 
+            closeCartModal(); 
+            orderCount++; 
+        } else {
+            showToast("❌ Сталася помилка при відправці.");
+        }
+    })
+    .catch(error => {
+        console.error("Помилка:", error);
+        showToast("❌ Помилка мережі.");
+    });
+}
+
+function showToast(text) {
+    let container = document.getElementById("toast-container");
+    
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toast-container";
+        container.className = "toast-container";
+        document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    toast.innerText = text;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
